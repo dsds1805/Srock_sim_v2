@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>주식투자 시뮬레이션</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --bg:       #070c1a;
+  --bg2:      #0d1525;
+  --surface:  #111d30;
+  --surface2: #1a2840;
+  --border:   #1e3050;
+  --border2:  #2a4070;
+  --text:     #e8f0ff;
+  --text2:    #6b89bb;
+  --text3:    #3d5a8a;
+  --cyan:     #00d4ff;
+  --green:    #00e676;
+  --red:      #ff3d5a;
+  --gold:     #ffd740;
+  --silver:   #b0bec5;
+  --bronze:   #ff9100;
+  --blue:     #448aff;
+  --purple:   #7c4dff;
+  --r: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,.08),transparent);pointer-events:none;z-index:0;}
+#app{position:relative;z-index:1;}
+
+/* ── TYPOGRAPHY ── */
+.mono{font-family:'JetBrains Mono',monospace;}
+h1{font-size:clamp(24px,5vw,36px);font-weight:900;letter-spacing:-.02em;}
+h2{font-size:18px;font-weight:700;}
+h3{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);margin-bottom:10px;}
+
+/* ── LAYOUT ── */
+.screen{max-width:520px;margin:0 auto;padding:24px 16px;min-height:100vh;}
+.wide{max-width:1140px;}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;text-align:center;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+.card+.card,.card+div>.card{margin-top:12px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.btn-full{width:100%;}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.btn-xs{padding:4px 10px;font-size:12px;}
+.btn-primary{background:var(--cyan);color:#000;}
+.btn-primary:hover:not(:disabled){background:#33dbff;}
+.btn-success{background:var(--green);color:#000;}
+.btn-success:hover:not(:disabled){filter:brightness(1.1);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-danger:hover:not(:disabled){filter:brightness(1.1);}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border2);}
+.btn-ghost:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-outline:hover:not(:disabled){border-color:var(--border2);color:var(--text);}
+.btn-admin{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;}
+.btn-join{background:linear-gradient(135deg,#0891b2,#2563eb);color:#fff;}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;letter-spacing:.05em;color:var(--text2);margin-bottom:6px;}
+input,textarea,select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+input:focus,textarea:focus,select:focus{border-color:var(--cyan);}
+input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-inner-spin-button{opacity:0;}
+textarea{resize:vertical;min-height:58px;line-height:1.5;}
+select option{background:var(--surface2);}
+
+/* ── BADGE ── */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.04em;}
+.badge-cyan{background:rgba(0,212,255,.15);color:var(--cyan);}
+.badge-green{background:rgba(0,230,118,.15);color:var(--green);}
+.badge-red{background:rgba(255,61,90,.15);color:var(--red);}
+.badge-gold{background:rgba(255,215,64,.15);color:var(--gold);}
+.badge-blue{background:rgba(68,138,255,.15);color:var(--blue);}
+
+/* ── HOME ── */
+.home-logo{font-size:72px;animation:float 4s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.home-title{background:linear-gradient(135deg,var(--cyan),var(--blue),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── PHASE BAR ── */
+.phase-bar{display:flex;gap:3px;margin-bottom:8px;}
+.phase-seg{flex:1;height:5px;border-radius:3px;background:var(--surface2);transition:background .4s;}
+.phase-seg.done{background:var(--green);}
+.phase-seg.curr{background:var(--cyan);animation:glow 1.5s ease-in-out infinite;}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── STOCK CARD ── */
+.stock-item{background:var(--surface2);border:1.5px solid var(--border2);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.stock-item:hover{border-color:var(--cyan);}
+.stock-item.sel{border-color:var(--cyan);background:rgba(0,212,255,.07);}
+.stock-price-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;}
+.price-up{color:var(--green);}
+.price-dn{color:var(--red);}
+.price-eq{color:var(--text2);}
+
+/* ── ASSET STRIP ── */
+.asset-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.asset-cell{background:var(--surface);padding:12px;text-align:center;}
+.asset-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:3px;}
+
+/* ── TRADE PANEL ── */
+.tabs{display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:3px;}
+.tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:700;border-radius:6px;cursor:pointer;color:var(--text2);transition:all .2s;}
+.tab.act{background:var(--surface);color:var(--text);}
+.qty-row{display:flex;align-items:center;gap:8px;}
+.qty-btn{width:36px;height:36px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.qty-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.qty-inp{width:70px;text-align:center;padding:8px 4px;}
+
+/* ── RANKINGS ── */
+.rank-row{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:8px;transition:background .15s;}
+.rank-row:hover{background:var(--surface2);}
+.rank-row.me{background:rgba(0,212,255,.1);}
+.rank-num{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;width:32px;text-align:center;flex-shrink:0;}
+.rank-name{flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ── NOTIFICATION ── */
+.notif-box{background:rgba(255,215,64,.07);border:1px solid rgba(255,215,64,.3);border-radius:10px;padding:14px;margin-bottom:10px;}
+.notif-box h4{font-size:12px;color:var(--gold);font-weight:700;letter-spacing:.06em;margin-bottom:6px;}
+.notif-box p{font-size:13px;line-height:1.6;color:var(--text);}
+
+/* ── HEADER ── */
+.app-header{background:rgba(7,12,26,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+
+/* ── ADMIN GRID ── */
+.admin-wrap{max-width:1140px;margin:0 auto;display:grid;grid-template-columns:1fr 300px;gap:16px;padding:16px 20px 30px;}
+@media(max-width:768px){.admin-wrap{grid-template-columns:1fr;}.admin-sidebar{display:none;}}
+.part-wrap{max-width:960px;margin:0 auto;display:grid;grid-template-columns:1fr 230px;gap:14px;padding:14px 14px 30px;}
+@media(max-width:640px){.part-wrap{grid-template-columns:1fr;}.rank-sidebar{order:99;}}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{padding:8px 10px;text-align:left;color:var(--text2);font-weight:700;font-size:11px;letter-spacing:.08em;border-bottom:1px solid var(--border2);}
+td{padding:10px 10px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+
+/* ── PODIUM ── */
+.podium-wrap{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin:24px 0;}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;max-width:160px;}
+.pod-name{font-weight:800;text-align:center;word-break:break-all;line-height:1.2;}
+.pod-block{width:100%;display:flex;align-items:center;justify-content:center;font-size:30px;border-radius:8px 8px 0 0;}
+.pod-val{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:32px;gap:12px;}
+
+/* ── PULSE DOT ── */
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pd 1.2s ease-in-out infinite;}
+@keyframes pd{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* ── TICKER FLASH ── */
+@keyframes flash-up{0%{background:rgba(0,230,118,.25)}100%{background:transparent}}
+@keyframes flash-dn{0%{background:rgba(255,61,90,.25)}100%{background:transparent}}
+.flash-up{animation:flash-up .6s ease-out;}
+.flash-dn{animation:flash-dn .6s ease-out;}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border);margin:14px 0;}
+.gap-8{gap:8px;}
+.flex{display:flex;}.items-c{align-items:center;}.justify-b{justify-content:space-between;}
+.mt-1{margin-top:4px;}.mt-2{margin-top:8px;}.mt-3{margin-top:12px;}.mt-4{margin-top:16px;}
+.mb-2{margin-bottom:8px;}.mb-3{margin-bottom:12px;}.mb-4{margin-bottom:16px;}
+.text-sm{font-size:13px;}.text-xs{font-size:11px;}.text-muted{color:var(--text2);}
+.text-c{text-align:center;}.font-bold{font-weight:700;}.font-black{font-weight:900;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">📈 <span>로딩 중...</span></div></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONSTANTS & STATE
+═══════════════════════════════════════════════ */
+const SK = {
+  GAME:'ss2:game', PFXP:'ss2:p_',
+  ROLE:'ss2:role', ID:'ss2:id', NAME:'ss2:name'
+};
+const INIT_CASH = 100;
+
+let S = {
+  screen:'loading', myRole:null, myId:null, myName:null,
+  gs:null, myData:null, allP:{},
+  selStock:0, tradeQty:1, activeTab:'buy',
+  adminTab:'ctrl',  // ctrl|parts|setup
+  pollCnt:0, lastGsTs:0,
+};
+
+/* ═══════════════════════════════════════════════
+   PURE HELPERS
+═══════════════════════════════════════════════ */
+function priceIdx(phase, stages){
+  if(phase<=1) return 0;
+  return Math.min(Math.floor((phase-1)/2), stages);
+}
+function getPrice(stock, phase, stages){
+  const v = stock.priceSchedule[priceIdx(phase,stages)];
+  return (v==null||v==='')?0:+v;
+}
+function maxPhase(stages){ return 2*stages+2; }
+function isNotif(phase){ return phase>=2 && phase%2===0; }
+function isPriceChg(phase){ return phase>=3 && phase%2===1; }
+function canTrade(phase,stages){ return phase>=1 && phase<maxPhase(stages); }
+
+function fmt(v){
+  const n=+v;
+  if(isNaN(n)) return '0만원';
+  const s = n%1===0 ? n.toLocaleString() : n.toFixed(1);
+  return s+'만원';
+}
+function calcTotal(p, gs){
+  if(!p||!gs) return 0;
+  let t = +p.cash||0;
+  (p.holdings||[]).forEach((q,i)=>{ if(gs.stocks[i]) t += q*getPrice(gs.stocks[i],gs.phase,gs.totalStages); });
+  return t;
+}
+function getRankings(allP, gs){
+  return Object.entries(allP)
+    .map(([id,p])=>({id,name:p.name,total:calcTotal(p,gs),data:p}))
+    .sort((a,b)=>b.total-a.total)
+    .map((e,i)=>({...e,rank:i+1}));
+}
+function phaseLabel(phase,stages){
+  const mp=maxPhase(stages);
+  if(phase===0) return '대기 중';
+  if(phase===1) return '초기 투자';
+  if(phase>=mp) return '최종 결과';
+  const n=Math.ceil((phase-1)/2);
+  if(phase%2===0) return `알림 & 거래 ${n}`;
+  return `가격 변동 ${n}`;
+}
+
+function defaultGS(){
+  return {phase:0, totalStages:3,
+    stocks:[
+      {name:'테크스타',  priceSchedule:[10,14,8,16]},
+      {name:'그린에너지',priceSchedule:[5,6,9,7]},
+      {name:'바이오팜',  priceSchedule:[20,15,25,18]},
+    ],
+    notifications:['','',''], notifVisible:false, ts:Date.now()
+  };
+}
+
+/* ═══════════════════════════════════════════════
+   STORAGE
+═══════════════════════════════════════════════ */
+
+async function sGet(k) {
+  if (k === SK.ROLE || k === SK.ID || k === SK.NAME) return localStorage.getItem(k);
+  try {
+    const res = await fetch('/api/get?k=' + encodeURIComponent(k));
+    const d = await res.json();
+    return d.value;
+  } catch { return null; }
+}
+
+async function sSet(k, v) {
+  if (k === SK.ROLE || k === SK.ID || k === SK.NAME) {
+    localStorage.setItem(k, v); return;
+  }
+  try {
+    await fetch('/api/set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ k, v })
+    });
+  } catch {}
+}
+
+async function sDel(k) {
+  if (k === SK.ROLE || k === SK.ID || k === SK.NAME) {
+    localStorage.removeItem(k); return;
+  }
+  try {
+    await fetch('/api/del', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ k })
+    });
+  } catch {}
+}
+
+async function sList(pfx) {
+  try {
+    const res = await fetch('/api/list?pfx=' + encodeURIComponent(pfx));
+    const d = await res.json();
+    return d.keys;
+  } catch { return []; }
+}
+
+async function saveGS(gs){ gs.ts=Date.now(); await sSet(SK.GAME,JSON.stringify(gs),true); }
+async function loadGS(){ const v=await sGet(SK.GAME,true); return v?JSON.parse(v):null; }
+async function saveP(id,d){ await sSet(SK.PFXP+id,JSON.stringify(d),true); }
+async function loadP(id){ const v=await sGet(SK.PFXP+id,true); return v?JSON.parse(v):null; }
+async function loadAllP(){
+  const keys=await sList(SK.PFXP,true);
+  const all={};
+  for(const k of keys){
+    const v=await sGet(k,true);
+    if(v) all[k.slice(SK.PFXP.length)]=JSON.parse(v);
+  }
+  return all;
+}
+function genId(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+
+/* ═══════════════════════════════════════════════
+   INIT & ROUTING
+═══════════════════════════════════════════════ */
+async function init(){
+  const role=await sGet(SK.ROLE);
+  const id=await sGet(SK.ID);
+  const name=await sGet(SK.NAME);
+  S.myRole=role; S.myId=id; S.myName=name;
+  S.gs=await loadGS();
+  const hash=window.location.hash;
+
+  if(role==='admin'){
+    S.allP=await loadAllP();
+    S.screen='adminGame';
+  } else if(role==='participant'&&id){
+    S.myData=await loadP(id);
+    if(!S.myData){ S.screen='joinName'; }
+    else {
+      const mp=maxPhase(S.gs?.totalStages||3);
+      if(!S.gs||S.gs.phase===0) S.screen='lobby';
+      else if(S.gs.phase>=mp){ S.allP=await loadAllP(); S.screen='final'; }
+      else S.screen='game';
+    }
+  } else {
+    S.screen = hash==='#join' ? 'joinName' : 'home';
+  }
+  render();
+  startPoll();
+}
+
+/* ═══════════════════════════════════════════════
+   POLLING
+═══════════════════════════════════════════════ */
+let pollTimer=null;
+function startPoll(){ pollTimer=setInterval(doPoll,1500); }
+
+async function doPoll(){
+  if(S.screen==='home'||S.screen==='joinName'||S.screen==='loading') return;
+  S.pollCnt++;
+  const gs=await loadGS();
+  const changed=gs&&gs.ts!==S.lastGsTs;
+  if(gs){ S.gs=gs; S.lastGsTs=gs.ts; }
+
+  // Load all participants periodically
+  if(S.pollCnt%3===0 || Object.keys(S.allP).length===0){
+    S.allP=await loadAllP();
+  }
+
+  if(S.myRole==='participant'&&S.myId){
+    if(changed||S.pollCnt%2===0) S.myData=await loadP(S.myId);
+    if(gs){
+      const mp=maxPhase(gs.totalStages);
+      if(gs.phase===0 && S.screen!=='lobby') S.screen='lobby';
+      else if(gs.phase>=1&&gs.phase<mp && S.screen==='lobby') S.screen='game';
+      else if(gs.phase>=mp && S.screen!=='final'){
+        S.allP=await loadAllP(); S.screen='final';
+      }
+    }
+  }
+
+  if(changed || S.pollCnt%3===0) partialUpdate();
+}
+
+function partialUpdate(){
+  // Update rankings sidebar without full re-render
+  const rsEl=document.getElementById('rankSidebar');
+  const rsElA=document.getElementById('rankSidebarA');
+  const rankings=getRankings(S.allP,S.gs);
+  if(rsEl) rsEl.innerHTML=buildRankList(rankings,S.myId,false);
+  if(rsElA) rsElA.innerHTML=buildRankList(rankings,null,true);
+
+  // Update phase bar
+  const pbEl=document.getElementById('phasebar');
+  if(pbEl&&S.gs) pbEl.innerHTML=buildPhaseBar(S.gs.phase,maxPhase(S.gs.totalStages));
+
+  // Update phase label
+  const plEl=document.getElementById('phaseLabel');
+  if(plEl&&S.gs) plEl.textContent=phaseLabel(S.gs.phase,S.gs.totalStages);
+
+  // If screen changed, do full render
+  const screens=['lobby','game','final','adminGame'];
+  if(screens.includes(S.screen)) {
+    // Only full-render on phase change to avoid clearing inputs
+    const pbElGame=document.getElementById('gamePhaseBadge');
+    if(pbElGame&&S.gs) pbElGame.textContent=phaseLabel(S.gs.phase,S.gs.totalStages);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER DISPATCHER
+═══════════════════════════════════════════════ */
+function render(){
+  const fns={home:renderHome,adminGame:renderAdmin,joinName:renderJoin,
+             lobby:renderLobby,game:renderGame,final:renderFinal,
+             loading:()=>'<div class="loading">📈 <span>로딩 중...</span></div>'};
+  document.getElementById('app').innerHTML=(fns[S.screen]||fns.loading)();
+  postRender();
+}
+function postRender(){
+  if(S.screen==='adminGame' && S.adminTab==='ctrl') genQR();
+}
+
+/* ═══════════════════════════════════════════════
+   HOME
+═══════════════════════════════════════════════ */
+function renderHome(){
+  return `
+<div class="screen center">
+  <div class="home-logo">📈</div>
+  <div>
+    <h1 class="home-title">주식투자<br>시뮬레이션</h1>
+    <p class="text-muted text-sm mt-2">실시간 주식 투자 체험 게임</p>
+  </div>
+  <div style="width:100%;max-width:280px;display:flex;flex-direction:column;gap:10px;">
+    <button class="btn btn-admin btn-full" onclick="goAdmin()">🔑 관리자 입장</button>
+    <button class="btn btn-join btn-full" onclick="goJoin()">👤 참여자 입장</button>
+  </div>
+  <p class="text-xs text-muted" style="margin-top:8px;">관리자 코드: 0000</p>
+</div>`;
+}
+async function goAdmin(){
+  const pw=prompt('관리자 코드를 입력하세요:');
+  if(pw===null) return;
+  if(pw!=='0000'){alert('잘못된 코드입니다.');return;}
+  await sSet(SK.ROLE,'admin');
+  S.myRole='admin';
+  S.gs=await loadGS();
+  if(!S.gs){S.gs=defaultGS();await saveGS(S.gs);}
+  S.allP=await loadAllP();
+  S.screen='adminGame'; render();
+}
+function goJoin(){ S.screen='joinName'; render(); }
+
+/* ═══════════════════════════════════════════════
+   JOIN
+═══════════════════════════════════════════════ */
+function renderJoin(){
+  return `
+<div class="screen center" style="gap:24px;">
+  <div style="font-size:56px;">🧑‍💼</div>
+  <div>
+    <h1 style="font-size:22px;">참여자 등록</h1>
+    <p class="text-muted text-sm mt-2">게임에 참여할 이름을 입력해 주세요</p>
+  </div>
+  <div style="width:100%;max-width:320px;">
+    <div class="form-group">
+      <label>참여자 이름</label>
+      <input id="nameInp" type="text" placeholder="최대 10자" maxlength="10" autofocus
+             style="font-size:18px;text-align:center;letter-spacing:.05em;"
+             onkeydown="if(event.key==='Enter')joinGame()">
+    </div>
+    <button class="btn btn-success btn-full" onclick="joinGame()">게임 참여하기 🚀</button>
+    <button class="btn btn-ghost btn-full mt-2" onclick="S.screen='home';render()">← 뒤로</button>
+  </div>
+</div>`;
+}
+async function joinGame(){
+  const el=document.getElementById('nameInp');
+  const name=(el?el.value:'').trim();
+  if(!name){alert('이름을 입력해 주세요.');return;}
+  if(!S.myId){ S.myId=genId(); await sSet(SK.ID,S.myId); }
+  S.myName=name;
+  await sSet(SK.NAME,name); await sSet(SK.ROLE,'participant');
+  S.myRole='participant';
+  const existing=await loadP(S.myId);
+  S.myData=existing||{name,cash:INIT_CASH,holdings:[0,0,0],joinedAt:Date.now()};
+  if(!existing) await saveP(S.myId,S.myData);
+  S.gs=await loadGS();
+  const mp=maxPhase(S.gs?.totalStages||3);
+  if(!S.gs||S.gs.phase===0) S.screen='lobby';
+  else if(S.gs.phase>=mp){S.allP=await loadAllP();S.screen='final';}
+  else S.screen='game';
+  render();
+}
+
+/* ═══════════════════════════════════════════════
+   LOBBY
+═══════════════════════════════════════════════ */
+function renderLobby(){
+  const name=S.myName||(S.myData&&S.myData.name)||'참여자';
+  return `
+<div class="screen center" style="gap:24px;">
+  <div style="font-size:56px;">⏳</div>
+  <div>
+    <h1 style="font-size:22px;">안녕하세요,<br><span style="color:var(--cyan);">${esc(name)}</span>님!</h1>
+    <p class="text-muted text-sm mt-3">관리자가 게임을 시작할 때까지 대기 중입니다</p>
+  </div>
+  <div class="card" style="width:100%;max-width:300px;text-align:center;">
+    <p class="text-muted text-sm">지급된 초기 투자금</p>
+    <div class="mono" style="font-size:38px;font-weight:900;color:var(--gold);margin-top:6px;">💰 100만원</div>
+  </div>
+  <div class="flex items-c gap-8" style="gap:8px;">
+    <div class="pulse-dot"></div>
+    <span class="text-sm text-muted">게임 시작 대기 중...</span>
+  </div>
+</div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   PHASE BAR BUILDER
+═══════════════════════════════════════════════ */
+function buildPhaseBar(phase,mp){
+  let h='';
+  for(let i=1;i<=mp;i++){
+    let cls='phase-seg';
+    if(i<phase) cls+=' done';
+    if(i===phase) cls+=' curr';
+    h+=`<div class="${cls}"></div>`;
+  }
+  return h;
+}
+
+/* ═══════════════════════════════════════════════
+   RANKING LIST BUILDER
+═══════════════════════════════════════════════ */
+function buildRankList(rankings,myId,showAmt){
+  if(!rankings.length) return '<p class="text-muted text-sm text-c" style="padding:10px 0;">참여자 없음</p>';
+  const medals=['🥇','🥈','🥉'];
+  return rankings.map(r=>{
+    const isMe=r.id===myId;
+    const m=r.rank<=3?medals[r.rank-1]:`<span class="mono" style="font-size:13px;">${r.rank}</span>`;
+    const amtHtml=showAmt?`<span class="mono text-sm" style="color:var(--green);">${fmt(r.total)}</span>`:'';
+    return `<div class="rank-row${isMe?' me':''}">
+      <div class="rank-num">${m}</div>
+      <div class="rank-name">${esc(r.name)}${isMe?' <span style="color:var(--cyan);font-size:11px;">(나)</span>':''}</div>
+      ${amtHtml}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   PARTICIPANT GAME
+═══════════════════════════════════════════════ */
+function renderGame(){
+  const gs=S.gs; const md=S.myData;
+  if(!gs||!md) return '<div class="loading">⏳</div>';
+  const phase=gs.phase; const stages=gs.totalStages;
+  const mp=maxPhase(stages);
+  const total=calcTotal(md,gs);
+  const stockVal=total-(+md.cash||0);
+  const rankings=getRankings(S.allP,gs);
+  const myRank=rankings.find(r=>r.id===S.myId);
+
+  const stocksHtml=gs.stocks.map((s,i)=>{
+    const price=getPrice(s,phase,stages);
+    const prevIdx=Math.max(0,priceIdx(phase,stages)-1);
+    const prev=s.priceSchedule[prevIdx]??price;
+    const diff=price-prev;
+    const cls=diff>0?'price-up':diff<0?'price-dn':'price-eq';
+    const arrow=diff>0?'▲':diff<0?'▼':'─';
+    const qty=(md.holdings||[])[i]||0;
+    return `
+    <div class="stock-item${S.selStock===i?' sel':''}" onclick="selStock(${i})">
+      <div>
+        <div style="font-weight:700;font-size:15px;">${esc(s.name)}</div>
+        <div class="text-muted text-xs mt-1">보유 ${qty}주 · ${fmt(qty*price)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="stock-price-val ${cls}">${fmt(price)}</div>
+        ${phase>=3?`<div class="text-xs ${cls}">${arrow} ${fmt(Math.abs(diff))}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const sel=gs.stocks[S.selStock];
+  const selPrice=getPrice(sel,phase,stages);
+  const selQty=(md.holdings||[])[S.selStock]||0;
+  const maxBuy=selPrice>0?Math.floor((+md.cash||0)/selPrice):0;
+  const qty=S.tradeQty||1;
+  const canT=canTrade(phase,stages);
+
+  // Notifications
+  const notifHtml=(isNotif(phase)&&gs.notifVisible)?`
+  <div style="margin-bottom:14px;">
+    <h3 style="color:var(--gold);">📢 알림</h3>
+    ${gs.notifications.map((n,i)=>n?`
+    <div class="notif-box">
+      <h4>📌 ${esc(gs.stocks[i]?.name||`종목${i+1}`)}</h4>
+      <p>${esc(n)}</p>
+    </div>`:'').join('')}
+  </div>`:'';
+
+  const tradeHtml=canT?`
+  <div class="card mt-3">
+    <div class="tabs mb-3" style="margin-bottom:12px;">
+      <div class="tab${S.activeTab==='buy'?' act':''}" onclick="setTab('buy')">📈 매수</div>
+      <div class="tab${S.activeTab==='sell'?' act':''}" onclick="setTab('sell')">📉 매도</div>
+    </div>
+    <div class="flex justify-b text-sm mb-2" style="margin-bottom:10px;">
+      <span class="text-muted">종목</span>
+      <span style="font-weight:700;">${esc(sel.name)} · ${fmt(selPrice)}/주</span>
+    </div>
+    <div class="qty-row mb-3" style="margin-bottom:12px;">
+      <button class="qty-btn" onclick="adjQty(-1)">−</button>
+      <input id="qtyInp" class="qty-inp" type="number" min="1" value="${qty}"
+             onchange="S.tradeQty=Math.max(1,+this.value||1);updateCostPreview()">
+      <button class="qty-btn" onclick="adjQty(1)">+</button>
+      <button class="btn btn-ghost btn-xs" onclick="setMaxQty()">최대</button>
+    </div>
+    <div class="flex justify-b text-sm mb-3" style="margin-bottom:12px;padding:10px;background:var(--surface2);border-radius:8px;">
+      <span class="text-muted">${S.activeTab==='buy'?'예상 매수금':'예상 매도금'}</span>
+      <span id="costPreview" class="mono font-bold">${fmt(selPrice*qty)}</span>
+    </div>
+    ${S.activeTab==='buy'?`
+    <button class="btn btn-success btn-full" onclick="doTrade('buy')" ${maxBuy<1?'disabled':''}>
+      매수하기 (최대 ${maxBuy}주 가능)
+    </button>`:`
+    <button class="btn btn-danger btn-full" onclick="doTrade('sell')" ${selQty<1?'disabled':''}>
+      매도하기 (보유 ${selQty}주)
+    </button>`}
+  </div>
+  `:`
+  <div class="card mt-3 text-c" style="padding:28px;">
+    <div style="font-size:36px;">${phase>=mp?'🏁':'👀'}</div>
+    <p class="text-muted text-sm mt-2">${phase>=mp?'게임이 종료되었습니다':'현재 가격을 확인하세요'}</p>
+  </div>`;
+
+  return `
+<div>
+  <div class="app-header">
+    <div class="flex items-c gap-8" style="gap:10px;">
+      <span style="font-weight:800;font-size:15px;">${esc(md.name)}</span>
+      <span id="gamePhaseBadge" class="badge badge-cyan">${phaseLabel(phase,stages)}</span>
+    </div>
+    <div style="text-align:right;">
+      <div class="text-xs text-muted">총 자산</div>
+      <div class="mono font-bold" style="font-size:16px;color:var(--green);">${fmt(total)}</div>
+    </div>
+  </div>
+
+  <div class="part-wrap">
+    <div>
+      <!-- Phase bar -->
+      <div id="phasebar" style="margin-bottom:6px;">${buildPhaseBar(phase,mp)}</div>
+      <p class="text-xs text-muted mb-3" style="margin-bottom:14px;">
+        <span id="phaseLabel">${phaseLabel(phase,stages)}</span>
+        &nbsp;·&nbsp; ${phase}/${mp} 단계
+      </p>
+
+      <!-- Asset strip -->
+      <div class="asset-strip mb-3" style="margin-bottom:14px;">
+        <div class="asset-cell">
+          <div class="text-xs text-muted">현금</div>
+          <div class="asset-val">${fmt(md.cash)}</div>
+        </div>
+        <div class="asset-cell">
+          <div class="text-xs text-muted">주식 평가</div>
+          <div class="asset-val" style="color:${stockVal>=0?'var(--green)':'var(--red)'};">${fmt(stockVal)}</div>
+        </div>
+        <div class="asset-cell">
+          <div class="text-xs text-muted">총 자산</div>
+          <div class="asset-val" style="color:var(--gold);">${fmt(total)}</div>
+        </div>
+      </div>
+
+      ${notifHtml}
+
+      <!-- Stocks -->
+      ${stocksHtml}
+      ${tradeHtml}
+    </div>
+
+    <!-- Ranking sidebar -->
+    <div class="rank-sidebar">
+      <div class="card" style="position:sticky;top:70px;">
+        <h3>🏆 실시간 순위</h3>
+        <div id="rankSidebar">${buildRankList(rankings,S.myId,false)}</div>
+        ${myRank?`<div class="divider"></div>
+          <div class="text-c text-sm">
+            내 순위: <span class="mono font-bold" style="color:var(--cyan);">${myRank.rank}위</span>
+          </div>`:''}
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN GAME
+═══════════════════════════════════════════════ */
+function renderAdmin(){
+  const gs=S.gs||defaultGS();
+  const mp=maxPhase(gs.totalStages);
+  const pCount=Object.keys(S.allP).length;
+  const rankings=getRankings(S.allP,gs);
+  const tab=S.adminTab;
+
+  let mainContent='';
+  if(tab==='ctrl') mainContent=renderAdminCtrl(gs,mp,pCount);
+  else if(tab==='parts') mainContent=renderAdminParts(gs,rankings);
+  else mainContent=renderAdminSetup(gs);
+
+  return `
+<div>
+  <div class="app-header">
+    <div class="flex items-c" style="gap:10px;">
+      <span style="font-size:18px;">📈</span>
+      <h2>관리자 패널</h2>
+      <span id="gamePhaseBadge" class="badge badge-cyan">${phaseLabel(gs.phase,gs.totalStages)}</span>
+    </div>
+    <div class="flex items-c" style="gap:8px;">
+      <span class="badge badge-green">${pCount}명</span>
+      <button class="btn btn-ghost btn-xs" onclick="resetGame()">초기화</button>
+    </div>
+  </div>
+
+  <div style="padding:12px 20px 0;">
+    <div id="phasebar">${buildPhaseBar(gs.phase,mp)}</div>
+    <p class="text-xs text-muted" style="margin:5px 0 12px;">
+      <span id="phaseLabel">${phaseLabel(gs.phase,gs.totalStages)}</span>
+      &nbsp;·&nbsp; ${gs.phase}/${mp} 단계
+    </p>
+    <div class="tabs" style="max-width:400px;margin-bottom:0;">
+      <div class="tab${tab==='ctrl'?' act':''}" onclick="switchTab('ctrl')">🎮 게임 제어</div>
+      <div class="tab${tab==='parts'?' act':''}" onclick="switchTab('parts')">👥 참여자</div>
+      <div class="tab${tab==='setup'?' act':''}" onclick="switchTab('setup')">⚙️ 설정</div>
+    </div>
+  </div>
+
+  <div class="admin-wrap">
+    <div>${mainContent}</div>
+    <div class="admin-sidebar">
+      <div class="card">
+        <h3>📊 실시간 순위</h3>
+        <div id="rankSidebarA">${buildRankList(rankings,null,true)}</div>
+      </div>
+      <div class="card mt-3">
+        <h3>🔗 참여자 QR</h3>
+        <div id="qrcode" style="display:flex;justify-content:center;padding:8px 0;"></div>
+        <p class="text-xs text-muted text-c mt-1">스캔하여 참여</p>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderAdminCtrl(gs,mp,pCount){
+  const isEnd=gs.phase>=mp;
+  let nextLabel='🚀 게임 시작';
+  if(gs.phase===0) nextLabel='🚀 게임 시작';
+  else if(isEnd) nextLabel='게임 종료됨';
+  else if(gs.phase%2===0) nextLabel='💹 가격 변동 공개';
+  else nextLabel='▶ 다음 단계';
+
+  const stocksHtml=gs.stocks.map((s,i)=>{
+    const price=getPrice(s,gs.phase,gs.totalStages);
+    const prevI=Math.max(0,priceIdx(gs.phase,gs.totalStages)-1);
+    const prev=s.priceSchedule[prevI]??price;
+    const diff=price-prev;
+    const cls=diff>0?'price-up':diff<0?'price-dn':'price-eq';
+    const arrow=diff>0?'▲':diff<0?'▼':'─';
+    return `
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:8px;">
+      <div class="flex justify-b items-c">
+        <span style="font-weight:700;">${esc(s.name)}</span>
+        <span class="text-xs ${cls}">${arrow} ${fmt(Math.abs(diff))}</span>
+      </div>
+      <div class="mono ${cls}" style="font-size:22px;font-weight:800;margin-top:4px;">${fmt(price)}</div>
+    </div>`;
+  }).join('');
+
+  const notifInputs=gs.stocks.map((s,i)=>`
+  <div class="mb-2" style="margin-bottom:10px;">
+    <label>${esc(s.name)} 알림</label>
+    <textarea id="notif${i}" rows="2" placeholder="참여자에게 보낼 힌트나 메시지...">${gs.notifications[i]||''}</textarea>
+  </div>`).join('');
+
+  return `
+  <div class="card mb-3" style="margin-bottom:12px;">
+    <h3>📈 현재 주가</h3>
+    ${stocksHtml}
+  </div>
+
+  <div class="card mb-3" style="margin-bottom:12px;">
+    <h3>📢 알림 메시지</h3>
+    ${notifInputs}
+    <div class="flex" style="gap:8px;margin-top:10px;">
+      <button class="btn btn-ghost btn-sm" onclick="sendNotif()">📣 알림 발송</button>
+      <button class="btn btn-outline btn-sm" onclick="clearNotif()">알림 초기화</button>
+    </div>
+    <p class="text-xs text-muted mt-2">알림은 '알림 & 거래' 단계에서 참여자에게 표시됩니다</p>
+  </div>
+
+  <div class="card">
+    <h3>🎮 단계 진행</h3>
+    <p class="text-sm text-muted mb-3" style="margin-bottom:12px;">참여자 <strong style="color:var(--text);">${pCount}명</strong> 접속 중</p>
+    <button class="btn ${isEnd?'btn-ghost':'btn-primary'} btn-full" ${isEnd?'disabled':''} onclick="nextPhase()">
+      ${nextLabel}
+    </button>
+    ${gs.phase===0?'<p class="text-xs text-muted text-c mt-2">참여자가 모두 접속한 후 시작하세요</p>':''}
+  </div>`;
+}
+
+function renderAdminParts(gs,rankings){
+  if(!rankings.length) return `<div class="card text-c" style="padding:40px;color:var(--text2);">아직 참여자가 없습니다</div>`;
+  const rows=rankings.map(r=>{
+    const p=S.allP[r.id];
+    const hStr=(p.holdings||[]).map((q,i)=>q>0?`${gs.stocks[i]?.name||`종목${i+1}`} ${q}주`:null).filter(Boolean).join(', ')||'없음';
+    return `<tr>
+      <td><strong>${r.rank}</strong></td>
+      <td>${esc(r.name)}</td>
+      <td class="mono">${fmt(p.cash)}</td>
+      <td class="text-xs" style="color:var(--text2);">${esc(hStr)}</td>
+      <td class="mono" style="color:var(--green);font-weight:700;">${fmt(r.total)}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="card">
+    <h3>👥 참여자 현황</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>순위</th><th>이름</th><th>현금</th><th>보유 주식</th><th>총 자산</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderAdminSetup(gs){
+  const stageOpts=[1,2,3,4,5].map(n=>`<option value="${n}"${gs.totalStages===n?' selected':''}>${n}단계</option>`).join('');
+
+  const stockCards=gs.stocks.map((s,si)=>{
+    const priceInps=s.priceSchedule.map((p,pi)=>`
+    <div>
+      <label style="font-size:10px;">${pi===0?'초기가':`변동 ${pi}`}</label>
+      <input type="number" value="${p}" min="0.1" step="0.1"
+             onchange="updatePrice(${si},${pi},this.value)"
+             style="padding:7px 8px;font-size:13px;">
+    </div>`).join('');
+    return `
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>종목 ${si+1} 이름</label>
+        <input type="text" value="${esc(s.name)}" maxlength="10" onchange="updateName(${si},this.value)">
+      </div>
+      <label style="font-size:11px;color:var(--text2);">가격 일정 (만원)</label>
+      <div style="display:grid;grid-template-columns:repeat(${gs.totalStages+1},1fr);gap:6px;margin-top:6px;">${priceInps}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card mb-3" style="margin-bottom:12px;">
+    <h3>⚙️ 게임 기본 설정</h3>
+    <div class="form-group">
+      <label>가격 변동 단계 수</label>
+      <select onchange="updateStages(this.value)">${stageOpts}</select>
+    </div>
+    <p class="text-xs text-muted">단계 수를 바꾸면 종목별 가격 일정이 자동으로 조정됩니다</p>
+  </div>
+  <div class="card">
+    <h3>📈 주식 종목 설정</h3>
+    <p class="text-xs text-muted mb-3" style="margin-bottom:12px;">변경 즉시 자동 저장됩니다</p>
+    ${stockCards}
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   FINAL SCREEN
+═══════════════════════════════════════════════ */
+function renderFinal(){
+  const gs=S.gs;
+  const rankings=getRankings(S.allP,gs);
+  if(!rankings.length) return `<div class="screen center"><div style="font-size:48px;">🏁</div><h2 class="mt-3">게임 종료!</h2><p class="text-muted text-sm mt-2">결과 로딩 중...</p></div>`;
+
+  // Podium: 2nd | 1st | 3rd
+  const top3=rankings.slice(0,Math.min(3,rankings.length));
+  const podiumOrder=top3.length>=2?[top3[1],top3[0],top3[2]?top3[2]:null]:[top3[0],null,null];
+  const pods=[
+    {h:110,col:'var(--silver)',emoji:'🥈',label:'2등',sz:'14px'},
+    {h:145,col:'var(--gold)', emoji:'🥇',label:'1등',sz:'20px'},
+    {h:85, col:'var(--bronze)',emoji:'🥉',label:'3등',sz:'14px'},
+  ];
+
+  const podHtml=podiumOrder.map((r,pi)=>{
+    if(!r) return `<div class="pod" style="flex:1;max-width:150px;"></div>`;
+    const p=S.allP[r.id];
+    const hStr=(p?.holdings||[]).map((q,i)=>q>0?`${gs?.stocks[i]?.name} ${q}주`:null).filter(Boolean).join(' · ')||'없음';
+    return `
+    <div class="pod" style="flex:1;max-width:150px;">
+      <div style="font-size:${pods[pi].sz};font-weight:900;">${pods[pi].label}</div>
+      <div class="pod-name" style="font-size:${pi===1?'18px':'14px'};color:${pods[pi].col};">${esc(r.name)}</div>
+      <div class="text-xs text-muted text-c" style="max-width:120px;line-height:1.4;">${esc(hStr)}</div>
+      <div class="pod-val">${fmt(r.total)}</div>
+      <div style="width:100%;height:${pods[pi].h}px;background:${pods[pi].col};border-radius:8px 8px 0 0;opacity:.25;"></div>
+    </div>`;
+  }).join('');
+
+  const restRows=rankings.slice(3).map(r=>{
+    const p=S.allP[r.id];
+    const hStr=(p?.holdings||[]).map((q,i)=>q>0?`${gs?.stocks[i]?.name} ${q}주`:null).filter(Boolean).join(', ')||'없음';
+    return `
+    <div class="flex items-c" style="gap:12px;padding:12px 8px;border-bottom:1px solid var(--border);">
+      <span class="mono font-bold text-muted" style="width:32px;text-align:center;">${r.rank}</span>
+      <div style="flex:1;">
+        <div style="font-weight:600;">${esc(r.name)}</div>
+        <div class="text-xs text-muted">${esc(hStr)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono font-bold" style="color:var(--green);">${fmt(r.total)}</div>
+        <div class="text-xs text-muted">현금 ${fmt(p?.cash||0)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+<div style="max-width:600px;margin:0 auto;padding:24px 16px 40px;">
+  <div class="text-c" style="margin-bottom:24px;">
+    <div style="font-size:52px;">🏆</div>
+    <h1 class="mt-2" style="background:linear-gradient(135deg,var(--gold),var(--bronze));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">최종 결과</h1>
+    <p class="text-muted text-sm mt-2">주식투자 시뮬레이션 종료</p>
+  </div>
+
+  <div class="podium-wrap">${podHtml}</div>
+
+  ${rankings.length>3?`
+  <div class="card">
+    <h3>📋 전체 순위</h3>
+    ${restRows}
+  </div>`:''}
+
+  ${S.myRole==='admin'?`
+  <div class="text-c mt-4" style="margin-top:20px;">
+    <button class="btn btn-ghost btn-sm" onclick="resetGame()">🔄 새 게임 시작</button>
+  </div>`:''}
+</div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   ACTION HANDLERS
+═══════════════════════════════════════════════ */
+function switchTab(t){ S.adminTab=t; render(); }
+
+async function nextPhase(){
+  const gs=S.gs||defaultGS();
+  const mp=maxPhase(gs.totalStages);
+  if(gs.phase>=mp) return;
+  gs.phase++;
+  gs.notifVisible = isNotif(gs.phase);
+  await saveGS(gs); S.gs=gs; render();
+}
+
+async function sendNotif(){
+  const gs=S.gs||defaultGS();
+  gs.notifications=gs.stocks.map((_,i)=>{
+    const el=document.getElementById(`notif${i}`); return el?el.value:gs.notifications[i]||'';
+  });
+  gs.notifVisible=true;
+  await saveGS(gs); S.gs=gs;
+  showToast('📣 알림이 발송되었습니다!');
+}
+
+async function clearNotif(){
+  const gs=S.gs||defaultGS();
+  gs.notifications=['','',''];
+  gs.notifVisible=false;
+  await saveGS(gs); S.gs=gs; render();
+}
+
+async function updateName(si,val){
+  const gs=S.gs; if(!gs) return;
+  gs.stocks[si].name=val.trim()||gs.stocks[si].name;
+  await saveGS(gs); S.gs=gs;
+}
+
+async function updatePrice(si,pi,val){
+  const gs=S.gs; if(!gs) return;
+  const n=parseFloat(val);
+  if(!isNaN(n)&&n>0){ gs.stocks[si].priceSchedule[pi]=n; await saveGS(gs); S.gs=gs; }
+}
+
+async function updateStages(val){
+  const gs=S.gs||defaultGS();
+  const n=parseInt(val);
+  gs.totalStages=n;
+  gs.stocks.forEach(s=>{
+    const cur=s.priceSchedule;
+    while(cur.length<n+1) cur.push(cur[cur.length-1]||10);
+    s.priceSchedule=cur.slice(0,n+1);
+  });
+  await saveGS(gs); S.gs=gs; render();
+}
+
+async function resetGame(){
+  if(!confirm('게임을 초기화하시겠습니까?\n모든 참여자 데이터가 삭제됩니다.')) return;
+  const keys=await sList(SK.PFXP,true);
+  for(const k of keys) await sDel(k,true);
+  const gs=defaultGS(); await saveGS(gs);
+  S.gs=gs; S.allP={}; render();
+  showToast('✅ 게임이 초기화되었습니다');
+}
+
+function selStock(i){ S.selStock=i; S.tradeQty=1; render(); }
+function setTab(t){ S.activeTab=t; S.tradeQty=1; render(); }
+
+function adjQty(d){
+  S.tradeQty=Math.max(1,(S.tradeQty||1)+d);
+  const el=document.getElementById('qtyInp');
+  if(el) el.value=S.tradeQty;
+  updateCostPreview();
+}
+function updateCostPreview(){
+  const gs=S.gs; if(!gs) return;
+  const price=getPrice(gs.stocks[S.selStock],gs.phase,gs.totalStages);
+  const el=document.getElementById('costPreview');
+  if(el) el.textContent=fmt(price*(S.tradeQty||1));
+}
+function setMaxQty(){
+  const gs=S.gs; const md=S.myData; if(!gs||!md) return;
+  const price=getPrice(gs.stocks[S.selStock],gs.phase,gs.totalStages);
+  const selQty=(md.holdings||[])[S.selStock]||0;
+  S.tradeQty=S.activeTab==='buy'?Math.max(1,Math.floor((+md.cash||0)/price)):Math.max(1,selQty);
+  const el=document.getElementById('qtyInp');
+  if(el) el.value=S.tradeQty;
+  updateCostPreview();
+}
+
+async function doTrade(type){
+  const gs=S.gs; const md=JSON.parse(JSON.stringify(S.myData));
+  if(!gs||!md||!S.myId) return;
+  const price=getPrice(gs.stocks[S.selStock],gs.phase,gs.totalStages);
+  const qty=S.tradeQty||1;
+  if(type==='buy'){
+    const cost=price*qty;
+    if((+md.cash||0)<cost){showToast('❌ 현금이 부족합니다.');return;}
+    md.cash=+(md.cash-cost).toFixed(4);
+    md.holdings[S.selStock]=(md.holdings[S.selStock]||0)+qty;
+  } else {
+    const have=(md.holdings||[])[S.selStock]||0;
+    if(have<qty){showToast('❌ 보유 주식이 부족합니다.');return;}
+    md.cash=+(md.cash+price*qty).toFixed(4);
+    md.holdings[S.selStock]-=qty;
+  }
+  await saveP(S.myId,md);
+  S.myData=md; S.tradeQty=1;
+  showToast(type==='buy'?`📈 ${qty}주 매수 완료!`:`📉 ${qty}주 매도 완료!`);
+  render();
+}
+
+/* ═══════════════════════════════════════════════
+   QR CODE
+═══════════════════════════════════════════════ */
+function genQR(){
+  const el=document.getElementById('qrcode'); if(!el) return;
+  el.innerHTML='';
+  let url='';
+  try{ url=window.location.href.split('#')[0]+'#join'; } catch{ url='#join'; }
+  try{
+    new QRCode(el,{text:url,width:170,height:170,colorDark:'#e8f0ff',colorLight:'#111d30'});
+  } catch{
+    el.innerHTML=`<p class="text-xs text-muted" style="word-break:break-all;">${url}</p>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+function showToast(msg){
+  const old=document.getElementById('toast');
+  if(old) old.remove();
+  const t=document.createElement('div');
+  t.id='toast';
+  t.textContent=msg;
+  Object.assign(t.style,{
+    position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',
+    background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'10px',
+    padding:'10px 20px',fontSize:'14px',fontWeight:'600',zIndex:'9999',
+    animation:'toastIn .25s ease',boxShadow:'0 8px 32px rgba(0,0,0,.5)',
+    fontFamily:'Outfit,sans-serif',color:'var(--text)',whiteSpace:'nowrap'
+  });
+  const style=document.createElement('style');
+  style.textContent='@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+  document.head.appendChild(style);
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+/* ═══════════════════════════════════════════════
+   ESCAPE HELPER
+═══════════════════════════════════════════════ */
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ═══════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════ */
+window.addEventListener('load', init);
+window.addEventListener('hashchange',()=>{
+  if(window.location.hash==='#join'&&!S.myRole){ S.screen='joinName'; render(); }
+});
+</script>
+</body>
+</html>
