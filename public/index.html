@@ -263,13 +263,12 @@ function defaultGS(){
 }
 
 /* ═══════════════════════════════════════════════
-   STORAGE
+   STORAGE (캐시 문제 완벽 해결!)
 ═══════════════════════════════════════════════ */
-
 async function sGet(k) {
   if (k === SK.ROLE || k === SK.ID || k === SK.NAME) return localStorage.getItem(k);
   try {
-    const res = await fetch('/api/get?k=' + encodeURIComponent(k));
+    const res = await fetch('/api/get?k=' + encodeURIComponent(k) + '&t=' + Date.now(), { cache: 'no-store' });
     const d = await res.json();
     return d.value;
   } catch { return null; }
@@ -303,7 +302,7 @@ async function sDel(k) {
 
 async function sList(pfx) {
   try {
-    const res = await fetch('/api/list?pfx=' + encodeURIComponent(pfx));
+    const res = await fetch('/api/list?pfx=' + encodeURIComponent(pfx) + '&t=' + Date.now(), { cache: 'no-store' });
     const d = await res.json();
     return d.keys;
   } catch { return []; }
